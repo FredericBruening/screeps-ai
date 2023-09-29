@@ -20,7 +20,6 @@ declare global {
 
     interface CreepMemory {
         role: string;
-        room?: string;
         ready: boolean;
     }
 
@@ -37,42 +36,61 @@ declare global {
 export const loop = ErrorMapper.wrapLoop(() => {
     if (Game.spawns["Spawn1"]) {
         let spawn = Game.spawns["Spawn1"];
+        let controller = spawn.room.controller;
+        let room = spawn.room;
 
-        let creepsInventory: {[key: string]: number} = {
-            worker: 0,
-            builder: 0
-        }
+        if (controller && controller.level > 1) {
+            // place construction sites for extensions
+            if (controller.level == 2) {
+                let x = spawn.pos.x - 2;
+                let y = spawn.pos.y;
 
-        for(const name in Game.creeps) {
-            let creep = Game.creeps[name]
+                let extensions = room.find(FIND_CONSTRUCTION_SITES, {
+                    filter: structure => structure.structureType == STRUCTURE_EXTENSION
+                })
 
-            if(creep.memory.role in creepsInventory) {
-                creepsInventory[creep.memory.role] += 1
+                if(extensions.length < 5) {
+                    x = x - extensions.length
+                    let result = room.createConstructionSite(x, y, STRUCTURE_EXTENSION);
+                    console.log(result)
+                }
             }
         }
 
-        for(const name in creepsInventory) {
-            if(creepsInventory[name] < settings.creeps[name]) {
+        // Create a creep inventory to count current number of creeps
+        let creepsInventory: { [key: string]: number } = {
+            worker: 0,
+            builder: 0
+        };
+
+        for (const name in Game.creeps) {
+            let creep = Game.creeps[name];
+
+            if (creep.memory.role in creepsInventory) {
+                creepsInventory[creep.memory.role] += 1;
+            }
+        }
+
+        // Spawn necessary creeps
+        for (const name in creepsInventory) {
+            if (creepsInventory[name] < settings.creeps[name]) {
                 let newName = name + Game.time;
 
-                spawn.spawnCreep(
-                    [WORK, CARRY, MOVE],
-                     newName,
-                     { memory: { role: name, ready: false } }
-                );
+                spawn.spawnCreep([WORK, CARRY, MOVE], newName, { memory: { role: name, ready: false } });
             }
         }
     }
 
+    // Every creep has one role
     for (const name in Game.creeps) {
         let creep = Game.creeps[name];
 
         if (creep.memory.role == "worker") {
-            worker.run(Game.creeps[name]);
+            worker.run(creep);
         }
 
         if (creep.memory.role == "builder") {
-            builder.run(Game.creeps[name]);
+            builder.run(creep);
         }
     }
 
