@@ -28,7 +28,7 @@ const worker = {
         }
     },
     feed(creep: Creep, targets: Array<Structure>) {
-        // harvest or move to spawn
+        // transfer energy to hungry targets
         for (const name of targets) {
             if (creep.transfer(name, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(name);

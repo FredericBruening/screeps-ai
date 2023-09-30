@@ -1,3 +1,5 @@
+import CreepController from "CreepManager";
+import Job from "Job";
 import settings from "config/settings";
 import builder from "roles/builder";
 import worker from "roles/worker";
@@ -23,6 +25,10 @@ declare global {
         ready: boolean;
     }
 
+    interface RoomMemory {
+        jobs: Array<Job>;
+    }
+
     // Syntax for adding proprties to `global` (ex "global.log")
     namespace NodeJS {
         interface Global {
@@ -30,6 +36,8 @@ declare global {
         }
     }
 }
+
+const creepController = new CreepController
 
 // When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
@@ -39,65 +47,38 @@ export const loop = ErrorMapper.wrapLoop(() => {
         let controller = spawn.room.controller;
         let room = spawn.room;
 
+        // add jobs to the room jobs table
+        // upgrader job
+        // check if controller needs upgrade
+        // harvester jobs
+        // check if there are target not full
+        // builder jobs
+        // check if there are construction sites
+
+        // Room controler, add construction sites, management
         if (controller && controller.level > 1) {
             // place construction sites for extensions
-            if (controller.level == 2) {
-                let x = spawn.pos.x - 2;
-                let y = spawn.pos.y;
+            let x = spawn.pos.x - 2;
+            let y = spawn.pos.y;
 
-                let extensions = room.find(FIND_CONSTRUCTION_SITES, {
-                    filter: structure => structure.structureType == STRUCTURE_EXTENSION
-                })
+            let incompleteExtensions = room.find(FIND_MY_CONSTRUCTION_SITES, {
+                filter: structure => structure.structureType == STRUCTURE_EXTENSION
+            });
 
-                if(extensions.length < 5) {
-                    x = x - extensions.length
-                    let result = room.createConstructionSite(x, y, STRUCTURE_EXTENSION);
-                    console.log(result)
-                }
+            let builtExtensions = room.find(FIND_MY_STRUCTURES, {
+                filter: structure => structure.structureType == STRUCTURE_EXTENSION
+            });
+
+            let extensionsCount = incompleteExtensions.length + builtExtensions.length;
+
+            // make construction sites for the amount of available extensions
+            if (extensionsCount < CONTROLLER_STRUCTURES[STRUCTURE_EXTENSION][controller.level]) {
+                x = x - extensionsCount;
+                let result = room.createConstructionSite(x, y, STRUCTURE_EXTENSION);
             }
         }
 
-        // Create a creep inventory to count current number of creeps
-        let creepsInventory: { [key: string]: number } = {
-            worker: 0,
-            builder: 0
-        };
-
-        for (const name in Game.creeps) {
-            let creep = Game.creeps[name];
-
-            if (creep.memory.role in creepsInventory) {
-                creepsInventory[creep.memory.role] += 1;
-            }
-        }
-
-        // Spawn necessary creeps
-        for (const name in creepsInventory) {
-            if (creepsInventory[name] < settings.creeps[name]) {
-                let newName = name + Game.time;
-
-                spawn.spawnCreep([WORK, CARRY, MOVE], newName, { memory: { role: name, ready: false } });
-            }
-        }
     }
 
-    // Every creep has one role
-    for (const name in Game.creeps) {
-        let creep = Game.creeps[name];
-
-        if (creep.memory.role == "worker") {
-            worker.run(creep);
-        }
-
-        if (creep.memory.role == "builder") {
-            builder.run(creep);
-        }
-    }
-
-    // Automatically delete memory of missing creeps
-    for (const name in Memory.creeps) {
-        if (!(name in Game.creeps)) {
-            delete Memory.creeps[name];
-        }
-    }
+    creepController.manage()
 });
