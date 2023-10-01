@@ -1,5 +1,6 @@
 import CreepController from "CreepManager";
 import Job from "Job";
+import JobController from "JobController";
 import settings from "config/settings";
 import builder from "roles/builder";
 import worker from "roles/worker";
@@ -37,7 +38,8 @@ declare global {
     }
 }
 
-const creepController = new CreepController
+const creepController = new CreepController();
+const jobController = new JobController();
 
 // When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
@@ -48,12 +50,26 @@ export const loop = ErrorMapper.wrapLoop(() => {
         let room = spawn.room;
 
         // add jobs to the room jobs table
-        // upgrader job
+        const jobs = room.memory.jobs;
+
         // check if controller needs upgrade
+        if (controller) {
+            if (controller.ticksToDowngrade < CONTROLLER_DOWNGRADE[controller.level] * 0.8) {
+                jobController.add(new Job(controller, "upgrade"));
+            }
+        }
+
+        // builder jobs
+        const constructionSites = room.find(FIND_MY_CONSTRUCTION_SITES);
+
+        if (constructionSites.length < jobController.jobsByRole("builder")) {
+            for(const site in constructionSites) {
+                jobController.addOrIgnore(constructionSites[site], "builder")
+            }
+        }
+
         // harvester jobs
         // check if there are target not full
-        // builder jobs
-        // check if there are construction sites
 
         // Room controler, add construction sites, management
         if (controller && controller.level > 1) {
@@ -74,11 +90,10 @@ export const loop = ErrorMapper.wrapLoop(() => {
             // make construction sites for the amount of available extensions
             if (extensionsCount < CONTROLLER_STRUCTURES[STRUCTURE_EXTENSION][controller.level]) {
                 x = x - extensionsCount;
-                let result = room.createConstructionSite(x, y, STRUCTURE_EXTENSION);
+                room.createConstructionSite(x, y, STRUCTURE_EXTENSION);
             }
         }
-
     }
 
-    creepController.manage()
+    creepController.manage();
 });

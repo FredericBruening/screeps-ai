@@ -1,13 +1,12 @@
 class Job {
-    room: Room
-    target: Structure
-    worker: Creep
+    id: string
+    target: AnyStructure|ConstructionSite
+    worker?: Creep
     role: string
 
-    constructor(room: Room, object: Structure, worker: Creep, role: string) {
-        this.room = room
+    constructor(object: AnyStructure|ConstructionSite, role: string) {
+        this.id = "Job" + Game.time + Math.floor(Math.random() * 100)
         this.target = object
-        this.worker = worker
         this.role = role
     }
 }
