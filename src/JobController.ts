@@ -12,9 +12,9 @@ class JobController {
     }
 
     addOrIgnore(structure: AnyStructure|ConstructionSite, role: string) {
-        const activeJob = this.jobs.find(job => job.target.id === structure.id)
+        const existingJob = this.jobs.find(job => job.target.id === structure.id)
 
-        if(activeJob) {
+        if(existingJob) {
             return
         }
 

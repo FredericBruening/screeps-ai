@@ -1,13 +1,33 @@
 import settings from "config/settings";
-import builder from "roles/builder";
 import worker from "roles/worker";
 
 class CreepController {
+
     manage() {
         const spawn = Game.spawns['Spawn1']
 
         if(!spawn) return
 
+        this.spawnCreeps(spawn)
+
+        // Every creep has one role
+        for (const name in Game.creeps) {
+            let creep = Game.creeps[name];
+
+            if (creep.memory.role == "worker") {
+                worker.run(creep);
+            }
+        }
+
+        // Automatically delete memory of missing creeps
+        for (const name in Memory.creeps) {
+            if (!(name in Game.creeps)) {
+                delete Memory.creeps[name];
+            }
+        }
+    }
+
+    spawnCreeps(spawn: StructureSpawn) {
         // Create a creep inventory to count current number of creeps
         let creepsInventory: { [key: string]: number } = {
             worker: 0,
@@ -28,26 +48,6 @@ class CreepController {
                 let newName = name + Game.time;
 
                 spawn.spawnCreep([WORK, CARRY, MOVE], newName, { memory: { role: name, ready: false } });
-            }
-        }
-
-        // Every creep has one role
-        for (const name in Game.creeps) {
-            let creep = Game.creeps[name];
-
-            if (creep.memory.role == "worker") {
-                worker.run(creep);
-            }
-
-            if (creep.memory.role == "builder") {
-                builder.run(creep);
-            }
-        }
-
-        // Automatically delete memory of missing creeps
-        for (const name in Memory.creeps) {
-            if (!(name in Game.creeps)) {
-                delete Memory.creeps[name];
             }
         }
     }

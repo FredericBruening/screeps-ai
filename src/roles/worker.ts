@@ -45,8 +45,13 @@ const worker = {
         }
     },
     run(creep: Creep) {
+        // if on a job continue with process until job is finished
+
+        // collect enery
+            // primary requirement for any job
         this.collectEnergy(creep);
 
+        // once full check for jobs or go to idle position
         if (creep.memory.ready) {
             let hungryTargets = this.hungryTargets(creep);
 

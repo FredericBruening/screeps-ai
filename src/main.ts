@@ -26,10 +26,6 @@ declare global {
         ready: boolean;
     }
 
-    interface RoomMemory {
-        jobs: Array<Job>;
-    }
-
     // Syntax for adding proprties to `global` (ex "global.log")
     namespace NodeJS {
         interface Global {
@@ -49,9 +45,6 @@ export const loop = ErrorMapper.wrapLoop(() => {
         let controller = spawn.room.controller;
         let room = spawn.room;
 
-        // add jobs to the room jobs table
-        const jobs = room.memory.jobs;
-
         // check if controller needs upgrade
         if (controller) {
             if (controller.ticksToDowngrade < CONTROLLER_DOWNGRADE[controller.level] * 0.8) {
@@ -69,7 +62,21 @@ export const loop = ErrorMapper.wrapLoop(() => {
         }
 
         // harvester jobs
-        // check if there are target not full
+
+        const energyTargets = room.find(FIND_STRUCTURES, {
+            filter: structure => {
+                return (
+                    (structure.structureType == STRUCTURE_SPAWN || structure.structureType == STRUCTURE_EXTENSION) &&
+                    structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0
+                );
+            }
+        });
+
+        if(energyTargets.length > 0) {
+            for(const target in energyTargets) {
+                jobController.addOrIgnore(energyTargets[target], "harvester")
+            }
+        }
 
         // Room controler, add construction sites, management
         if (controller && controller.level > 1) {
